@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -40,8 +41,8 @@ class FramesRelationManager extends RelationManager
                     ->label('الشكل')
                     ->options(['point' => 'نقطة', 'polygon' => 'بوليجون'])
                     ->default('point')
-                    ->live()
-                    ->required(),
+                    ->required()
+                    ->extraInputAttributes(['data-map-field' => 'geometry_type']),
                 Select::make('icon')
                     ->label('الأيقونة')
                     ->options(self::ICONS)
@@ -75,15 +76,23 @@ class FramesRelationManager extends RelationManager
                             ->minValue(0)
                             ->maxValue(59),
                     ]),
-                Textarea::make('geometry')
-                    ->label(fn ($get) => $get('geometry_type') === 'polygon' ? 'الإحداثيات (GeoJSON Polygon)' : 'الإحداثيات (GeoJSON Point)')
-                    ->helperText('مثال لنقطة: {"type":"Point","coordinates":[31.2,30.0]} — مثال لبوليجون: {"type":"Polygon","coordinates":[[[31,30],[32,30],[32,31],[31,30]]]}')
-                    ->rows(4)
-                    ->required()
-                    ->columnSpanFull()
-                    ->formatStateUsing(fn (mixed $state): ?string => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                    ->dehydrateStateUsing(fn (?string $state): ?array => filled($state) ? json_decode($state, true) : null)
-                    ->rule('json'),
+                View::make('filament.forms.components.map-geometry-picker')
+                    ->columnSpanFull(),
+                Section::make('الإحداثيات (متقدم)')
+                    ->description('بتتحدّث تلقائيًا من الخريطة فوق — عدّلها هنا بس لو محتاج تلصق GeoJSON جاهز.')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Textarea::make('geometry')
+                            ->label('')
+                            ->helperText('مثال لنقطة: {"type":"Point","coordinates":[31.2,30.0]} — مثال لبوليجون: {"type":"Polygon","coordinates":[[[31,30],[32,30],[32,31],[31,30]]]}')
+                            ->rows(4)
+                            ->required()
+                            ->extraInputAttributes(['data-map-field' => 'geometry'])
+                            ->formatStateUsing(fn (mixed $state): ?string => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                            ->dehydrateStateUsing(fn (?string $state): ?array => filled($state) ? json_decode($state, true) : null)
+                            ->rule('json'),
+                    ]),
             ]);
     }
 

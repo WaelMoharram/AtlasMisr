@@ -7,6 +7,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 
 class EventForm
@@ -85,12 +86,23 @@ class EventForm
                             ->minValue(0)
                             ->maxValue(59),
                     ]),
-                TextInput::make('latitude')
-                    ->required()
-                    ->numeric(),
-                TextInput::make('longitude')
-                    ->required()
-                    ->numeric(),
+                View::make('filament.forms.components.map-point-picker')
+                    ->columnSpanFull(),
+                Section::make('الإحداثيات بالأرقام')
+                    ->description('بتتحدّث تلقائيًا من الخريطة فوق — عدّلها هنا بس لو محتاج دقة أعلى.')
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('latitude')
+                            ->required()
+                            ->numeric()
+                            ->extraInputAttributes(['data-map-field' => 'latitude']),
+                        TextInput::make('longitude')
+                            ->required()
+                            ->numeric()
+                            ->extraInputAttributes(['data-map-field' => 'longitude']),
+                    ]),
                 TextInput::make('location_name'),
                 TextInput::make('category'),
                 Textarea::make('description')

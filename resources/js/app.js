@@ -70,9 +70,13 @@ Alpine.data('atlas', () => ({
     error: null,
     era: null,
     events: [],
-    moment: null,
-    momentMin: null,
-    momentMax: null,
+    // The timeline only ever stops at real, already-computed moments
+    // (era bounds, event starts/ends, frame times) instead of scrubbing
+    // continuously — a continuous integer between two packed dates isn't
+    // itself a valid date (months don't all have the same number of days),
+    // so stepping through raw integers produces nonsense like "month 42".
+    timelineMoments: [],
+    momentIndex: 0,
     selectedEvent: null,
     map: null,
     markers: [],
@@ -87,18 +91,43 @@ Alpine.data('atlas', () => ({
 
             this.era = erasRes.data[0] ?? null;
             this.events = eventsRes.data;
-
-            if (this.era) {
-                this.momentMin = packMoment(this.era.start_year, 1, 1, 0, 0);
-                this.momentMax = packMoment(this.era.end_year, 12, 31, 23, 59);
-                this.moment = this.momentMin;
-            }
+            this.timelineMoments = this.buildTimelineMoments();
+            this.momentIndex = 0;
 
             this.initMap();
         } catch (e) {
             this.error = 'تعذّر تحميل بيانات الخريطة. تأكد إن السيرفر شغال.';
             this.loading = false;
         }
+    },
+
+    buildTimelineMoments() {
+        const moments = new Set();
+
+        if (this.era) {
+            moments.add(packMoment(this.era.start_year, 1, 1, 0, 0));
+            moments.add(packMoment(this.era.end_year, 12, 31, 23, 59));
+        }
+
+        this.events.forEach((event) => {
+            moments.add(event.start_moment);
+            moments.add(event.end_moment);
+            (event.frames ?? []).forEach((frame) => moments.add(frame.moment));
+        });
+
+        return Array.from(moments).sort((a, b) => a - b);
+    },
+
+    get moment() {
+        return this.timelineMoments[this.momentIndex] ?? null;
+    },
+
+    stepTime(delta) {
+        const next = this.momentIndex + delta;
+        if (next < 0 || next >= this.timelineMoments.length) return;
+
+        this.momentIndex = next;
+        this.onTimeChange();
     },
 
     initMap() {

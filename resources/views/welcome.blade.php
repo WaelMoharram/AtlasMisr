@@ -93,15 +93,31 @@
                             <span x-text="era.name_ar"></span>
                             <span class="font-mono text-amber-300" x-text="formatMoment(moment)"></span>
                         </div>
-                        <input
-                            type="range"
-                            class="w-full accent-amber-500"
-                            :min="momentMin"
-                            :max="momentMax"
-                            step="100"
-                            x-model.number="moment"
-                            @input="onTimeChange()"
-                        >
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="stepTime(-1)"
+                                :disabled="momentIndex <= 0"
+                                class="shrink-0 rounded-full bg-stone-800 px-2.5 py-1 text-stone-300 hover:bg-stone-700 disabled:opacity-30"
+                                aria-label="السابق"
+                            >▶</button>
+                            <input
+                                type="range"
+                                class="w-full accent-amber-500"
+                                min="0"
+                                :max="timelineMoments.length - 1"
+                                step="1"
+                                x-model.number="momentIndex"
+                                @input="onTimeChange()"
+                            >
+                            <button
+                                type="button"
+                                @click="stepTime(1)"
+                                :disabled="momentIndex >= timelineMoments.length - 1"
+                                class="shrink-0 rounded-full bg-stone-800 px-2.5 py-1 text-stone-300 hover:bg-stone-700 disabled:opacity-30"
+                                aria-label="التالي"
+                            >◀</button>
+                        </div>
                         <div class="mt-1 flex justify-between text-[11px] text-stone-500">
                             <span x-text="formatYear(era.start_year)"></span>
                             <span x-text="formatYear(era.end_year)"></span>
