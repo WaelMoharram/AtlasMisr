@@ -70,6 +70,8 @@ Alpine.data('atlas', () => ({
     error: null,
     eras: [],
     events: [],
+    searchQuery: '',
+    searchOpen: false,
     // The timeline only ever stops at real, already-computed moments
     // (era bounds, event starts/ends, frame times) instead of scrubbing
     // continuously — a continuous integer between two packed dates isn't
@@ -345,6 +347,36 @@ Alpine.data('atlas', () => ({
             : (frame?.geometry.coordinates ?? [event.longitude, event.latitude]);
 
         this.map.flyTo({ center, zoom: 8, duration: 800 });
+    },
+
+    get searchResults() {
+        const query = this.searchQuery.trim();
+        if (!query) return [];
+
+        const needle = query.toLowerCase();
+
+        return this.events
+            .filter((event) => (
+                event.title_ar.includes(query)
+                || event.title_en?.toLowerCase().includes(needle)
+                || event.description?.includes(query)
+                || event.location_name?.includes(query)
+            ))
+            .slice(0, 8);
+    },
+
+    // Jumps straight to an event regardless of where the timeline is
+    // currently scrubbed to — search bypasses browsing the timeline.
+    goToEvent(event) {
+        const index = this.timelineMoments.indexOf(event.start_moment);
+        if (index !== -1) {
+            this.momentIndex = index;
+            this.onTimeChange();
+        }
+
+        this.selectEvent(event);
+        this.searchQuery = '';
+        this.searchOpen = false;
     },
 
     closePanel() {

@@ -12,10 +12,46 @@
         <div x-data="atlas" class="relative h-full w-full">
             <div x-ref="map" class="absolute inset-0" style="position: absolute; inset: 0;"></div>
 
-            <header class="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center p-4">
-                <div class="pointer-events-auto rounded-full bg-stone-900/80 px-5 py-2 text-center shadow-lg backdrop-blur">
+            <header class="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-4">
+                <!-- Search -->
+                <div class="pointer-events-auto relative w-full max-w-[220px] sm:max-w-xs" @click.outside="searchOpen = false">
+                    <input
+                        type="search"
+                        x-model="searchQuery"
+                        @focus="searchOpen = true"
+                        @input="searchOpen = true"
+                        placeholder="ابحث عن حدث..."
+                        class="w-full rounded-full border border-stone-700 bg-stone-900/85 px-4 py-2 text-sm text-stone-100 placeholder-stone-500 shadow-lg backdrop-blur focus:border-amber-500 focus:outline-none"
+                    >
+                    <template x-if="searchOpen && searchQuery.trim() !== ''">
+                        <ul class="absolute mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-stone-700 bg-stone-900/95 shadow-xl backdrop-blur">
+                            <template x-for="result in searchResults" :key="result.id">
+                                <li>
+                                    <button
+                                        type="button"
+                                        @click="goToEvent(result)"
+                                        class="block w-full px-4 py-2 text-start text-sm text-stone-200 hover:bg-stone-800"
+                                    >
+                                        <span class="block" x-text="result.title_ar"></span>
+                                        <span class="block text-xs text-stone-500" x-text="formatEventDate(result)"></span>
+                                    </button>
+                                </li>
+                            </template>
+                            <template x-if="searchResults.length === 0">
+                                <li class="px-4 py-3 text-sm text-stone-500">مفيش نتائج</li>
+                            </template>
+                        </ul>
+                    </template>
+                </div>
+
+                <div class="pointer-events-auto shrink-0 rounded-full bg-stone-900/80 px-5 py-2 text-center shadow-lg backdrop-blur">
                     <h1 class="text-sm font-semibold tracking-wide">أطلس مصر</h1>
                 </div>
+
+                <a
+                    href="{{ route('landing') }}"
+                    class="pointer-events-auto hidden shrink-0 self-center rounded-full bg-stone-900/80 px-4 py-2 text-xs text-stone-300 shadow-lg backdrop-blur hover:bg-stone-800 sm:block"
+                >الرئيسية</a>
             </header>
 
             <template x-if="loading">
