@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Era;
 use App\Models\Event;
+use App\Models\EventFrame;
 use App\Models\Source;
 use Illuminate\Database\Seeder;
 
@@ -39,14 +40,21 @@ class DemoContentSeeder extends Seeder
             'status' => 'published',
         ]);
 
-        Event::create([
+        $crossingEvent = Event::create([
             'era_id' => $era->id,
             'title_ar' => 'عبور قناة السويس - حرب أكتوبر',
             'title_en' => 'Crossing of the Suez Canal - October War',
             'event_year' => 1973,
             'event_month' => 10,
             'event_day' => 6,
+            'event_hour' => 14,
+            'event_minute' => 5,
             'date_precision' => 'exact',
+            'ends_year' => 1973,
+            'ends_month' => 10,
+            'ends_day' => 6,
+            'ends_hour' => 23,
+            'ends_minute' => 59,
             'latitude' => 30.5965,
             'longitude' => 32.2715,
             'location_name' => 'الإسماعيلية، قناة السويس',
@@ -54,6 +62,22 @@ class DemoContentSeeder extends Seeder
             'description' => 'في 6 أكتوبر 1973 عبرت القوات المسلحة المصرية قناة السويس واخترقت خط بارليف، في بداية حرب أكتوبر التي أعادت لمصر جزءًا كبيرًا من الثقة الوطنية بعد نكسة 1967، ومهّدت لاحقًا لاسترداد سيناء بالكامل.',
             'source_id' => $crossingSource->id,
             'status' => 'published',
+        ]);
+
+        EventFrame::create([
+            'event_id' => $crossingEvent->id,
+            'occurs_year' => 1973,
+            'occurs_month' => 10,
+            'occurs_day' => 6,
+            'occurs_hour' => 14,
+            'occurs_minute' => 5,
+            'geometry_type' => 'polygon',
+            'geometry' => [
+                'type' => 'Polygon',
+                'coordinates' => [[[32.15, 29.90], [32.45, 29.90], [32.45, 31.35], [32.15, 31.35], [32.15, 29.90]]],
+            ],
+            'icon' => 'troops',
+            'label' => 'بدء العبور - الساعة H (14:05)، على طول القناة من بورسعيد للسويس',
         ]);
 
         Event::create([
