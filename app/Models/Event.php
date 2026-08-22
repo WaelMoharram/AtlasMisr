@@ -31,6 +31,7 @@ class Event extends Model
         'category',
         'description',
         'media',
+        'video_url',
         'source_id',
         'status',
     ];

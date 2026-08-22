@@ -383,6 +383,14 @@ Alpine.data('atlas', () => ({
         this.selectedEvent = null;
     },
 
+    youtubeEmbedUrl(url) {
+        if (!url) return null;
+
+        const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/);
+
+        return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+    },
+
     formatYear(year) {
         if (year === null || year === undefined) return '';
 

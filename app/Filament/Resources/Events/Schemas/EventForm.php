@@ -113,6 +113,10 @@ class EventForm
                     ->directory('events')
                     ->reorderable()
                     ->columnSpanFull(),
+                TextInput::make('video_url')
+                    ->label('رابط فيديو (يوتيوب)')
+                    ->url()
+                    ->columnSpanFull(),
                 Select::make('source_id')
                     ->relationship('source', 'title')
                     ->searchable()

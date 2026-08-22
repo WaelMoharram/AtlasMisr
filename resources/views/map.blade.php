@@ -104,6 +104,17 @@
                             </div>
                         </template>
 
+                        <template x-if="youtubeEmbedUrl(selectedEvent.video_url)">
+                            <div class="mt-4 aspect-video w-full overflow-hidden rounded-lg">
+                                <iframe
+                                    :src="youtubeEmbedUrl(selectedEvent.video_url)"
+                                    class="h-full w-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen
+                                ></iframe>
+                            </div>
+                        </template>
+
                         <template x-if="selectedEvent.source">
                             <div class="mt-6 border-t border-stone-700 pt-4 text-xs text-stone-400">
                                 <p class="mb-1 font-semibold text-stone-300">المصدر</p>
