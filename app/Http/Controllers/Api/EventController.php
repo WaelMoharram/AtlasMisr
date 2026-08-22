@@ -19,7 +19,7 @@ class EventController extends Controller
 
         $events = Event::query()
             ->published()
-            ->with('source')
+            ->with(['source', 'frames'])
             ->when($validated['era_id'] ?? null, fn ($query, $eraId) => $query->where('era_id', $eraId))
             ->when($validated['bbox'] ?? null, function ($query, $bbox) {
                 [$minLng, $minLat, $maxLng, $maxLat] = array_map('floatval', explode(',', $bbox));

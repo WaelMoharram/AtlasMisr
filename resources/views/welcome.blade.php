@@ -91,16 +91,16 @@
                     <div class="pointer-events-auto w-full max-w-xl rounded-2xl bg-stone-900/85 p-4 shadow-lg backdrop-blur">
                         <div class="mb-2 flex items-center justify-between text-xs text-stone-300">
                             <span x-text="era.name_ar"></span>
-                            <span class="font-mono text-amber-300" x-text="formatYear(year)"></span>
+                            <span class="font-mono text-amber-300" x-text="formatMoment(moment)"></span>
                         </div>
                         <input
                             type="range"
                             class="w-full accent-amber-500"
-                            :min="era.start_year"
-                            :max="era.end_year"
-                            step="1"
-                            x-model.number="year"
-                            @input="onYearChange()"
+                            :min="momentMin"
+                            :max="momentMax"
+                            step="100"
+                            x-model.number="moment"
+                            @input="onTimeChange()"
                         >
                         <div class="mt-1 flex justify-between text-[11px] text-stone-500">
                             <span x-text="formatYear(era.start_year)"></span>

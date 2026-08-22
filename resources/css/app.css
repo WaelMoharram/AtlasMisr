@@ -33,3 +33,19 @@ body,
 .atlas-marker:hover {
     background: #fbbf24;
 }
+
+.atlas-marker-icon {
+    width: auto;
+    height: auto;
+    border-radius: 9999px;
+    background: rgba(28, 25, 23, 0.85);
+    border: 1px solid #f59e0b;
+    box-shadow: none;
+    padding: 4px 6px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.atlas-marker-icon:hover {
+    background: rgba(41, 37, 36, 0.95);
+}

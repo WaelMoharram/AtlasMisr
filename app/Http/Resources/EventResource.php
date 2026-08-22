@@ -21,7 +21,11 @@ class EventResource extends JsonResource
             'event_year' => $this->event_year,
             'event_month' => $this->event_month,
             'event_day' => $this->event_day,
+            'event_hour' => $this->event_hour,
+            'event_minute' => $this->event_minute,
             'date_precision' => $this->date_precision,
+            'start_moment' => $this->startMoment(),
+            'end_moment' => $this->endMoment(),
             'latitude' => (float) $this->latitude,
             'longitude' => (float) $this->longitude,
             'location_name' => $this->location_name,
@@ -29,6 +33,7 @@ class EventResource extends JsonResource
             'description' => $this->description,
             'media' => collect($this->media)->map(fn (string $path) => Storage::disk('public')->url($path))->all(),
             'source' => new SourceResource($this->whenLoaded('source')),
+            'frames' => EventFrameResource::collection($this->whenLoaded('frames')),
         ];
     }
 }

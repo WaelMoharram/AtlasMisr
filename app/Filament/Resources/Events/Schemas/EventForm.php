@@ -6,6 +6,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class EventForm
@@ -22,26 +23,68 @@ class EventForm
                 TextInput::make('title_ar')
                     ->required(),
                 TextInput::make('title_en'),
-                TextInput::make('event_year')
-                    ->label('Year')
-                    ->helperText('Negative = BCE, e.g. -2560 for 2560 BC')
-                    ->required()
-                    ->numeric(),
-                TextInput::make('event_month')
-                    ->label('Month')
-                    ->helperText('Optional, only if the exact date is known')
-                    ->numeric()
-                    ->minValue(1)
-                    ->maxValue(12),
-                TextInput::make('event_day')
-                    ->label('Day')
-                    ->numeric()
-                    ->minValue(1)
-                    ->maxValue(31),
+                Section::make('Starts at')
+                    ->columns(5)
+                    ->schema([
+                        TextInput::make('event_year')
+                            ->label('Year')
+                            ->helperText('Negative = BCE, e.g. -2560')
+                            ->required()
+                            ->numeric(),
+                        TextInput::make('event_month')
+                            ->label('Month')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(12),
+                        TextInput::make('event_day')
+                            ->label('Day')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(31),
+                        TextInput::make('event_hour')
+                            ->label('Hour')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(23),
+                        TextInput::make('event_minute')
+                            ->label('Minute')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(59),
+                    ]),
                 Select::make('date_precision')
                     ->options(['exact' => 'Exact', 'approximate' => 'Approximate', 'century' => 'Century'])
                     ->default('approximate')
                     ->required(),
+                Section::make('Ends at')
+                    ->description('Optional. If left empty, the event is considered active for the rest of its own start precision (e.g. a year-only event stays active for that whole year) and then disappears from the timeline.')
+                    ->columns(5)
+                    ->collapsible()
+                    ->schema([
+                        TextInput::make('ends_year')
+                            ->label('Year')
+                            ->numeric(),
+                        TextInput::make('ends_month')
+                            ->label('Month')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(12),
+                        TextInput::make('ends_day')
+                            ->label('Day')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(31),
+                        TextInput::make('ends_hour')
+                            ->label('Hour')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(23),
+                        TextInput::make('ends_minute')
+                            ->label('Minute')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(59),
+                    ]),
                 TextInput::make('latitude')
                     ->required()
                     ->numeric(),

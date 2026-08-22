@@ -30,12 +30,49 @@ const ARABIC_LABEL_TEXT_FIELD = [
     ['coalesce', ['get', 'name_en'], ['get', 'name']],
 ];
 
+// Must mirror App\Support\Moment (app/Support/Moment.php) exactly — both
+// sides pack/compare the same "moment" integers.
+const YEAR_OFFSET = 10_000;
+
+function packMoment(year, month, day, hour, minute) {
+    return (year + YEAR_OFFSET) * 100_000_000
+        + (month ?? 1) * 1_000_000
+        + (day ?? 1) * 10_000
+        + (hour ?? 0) * 100
+        + (minute ?? 0);
+}
+
+function unpackMoment(moment) {
+    const year = Math.floor(moment / 100_000_000) - YEAR_OFFSET;
+    let rest = moment % 100_000_000;
+    const month = Math.floor(rest / 1_000_000);
+    rest %= 1_000_000;
+    const day = Math.floor(rest / 10_000);
+    rest %= 10_000;
+    const hour = Math.floor(rest / 100);
+    const minute = rest % 100;
+
+    return { year, month, day, hour, minute };
+}
+
+// Must mirror FramesRelationManager::ICONS keys (app/Filament/Resources/Events/RelationManagers/FramesRelationManager.php).
+const ICONS = {
+    position: '📍',
+    troops: '🎖️',
+    naval: '⚓',
+    air: '✈️',
+    battle: '⚔️',
+    flag: '🚩',
+};
+
 Alpine.data('atlas', () => ({
     loading: true,
     error: null,
     era: null,
     events: [],
-    year: null,
+    moment: null,
+    momentMin: null,
+    momentMax: null,
     selectedEvent: null,
     map: null,
     markers: [],
@@ -50,7 +87,12 @@ Alpine.data('atlas', () => ({
 
             this.era = erasRes.data[0] ?? null;
             this.events = eventsRes.data;
-            this.year = this.era ? this.era.start_year : null;
+
+            if (this.era) {
+                this.momentMin = packMoment(this.era.start_year, 1, 1, 0, 0);
+                this.momentMax = packMoment(this.era.end_year, 12, 31, 23, 59);
+                this.moment = this.momentMin;
+            }
 
             this.initMap();
         } catch (e) {
@@ -69,19 +111,21 @@ Alpine.data('atlas', () => ({
 
         this.map.addControl(new NavigationControl(), 'top-left');
 
-        // Markers are plain DOM overlays positioned via the map's
+        // Point markers are plain DOM overlays positioned via the map's
         // projection, so they don't need to wait on style/source loading.
         this.renderMarkers();
 
-        // The boundary layer and label overrides need addSource/addLayer/
-        // setLayoutProperty, which require a loaded style. 'styledata'
-        // fires repeatedly while the style resolves, so retry against it
-        // until it succeeds.
+        // Polygon frames, the boundary layer, and label overrides need
+        // addSource/addLayer/setLayoutProperty, which require a loaded
+        // style. 'styledata' fires repeatedly while the style resolves,
+        // so retry against it until it succeeds.
         const addContentWhenReady = () => {
             if (this.mapReady || !this.map.isStyleLoaded()) return;
             this.mapReady = true;
             this.renderBoundary();
             this.arabizeCountryLabels();
+            this.initPolygonLayer();
+            this.renderMarkers();
         };
 
         this.map.on('load', addContentWhenReady);
@@ -134,34 +178,122 @@ Alpine.data('atlas', () => ({
         });
     },
 
-    get visibleEvents() {
-        if (this.year === null) return [];
+    initPolygonLayer() {
+        this.map.addSource('event-frames-polygons', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+        });
 
-        return this.events.filter((event) => event.event_year <= this.year);
+        this.map.addLayer({
+            id: 'event-frames-polygons-fill',
+            type: 'fill',
+            source: 'event-frames-polygons',
+            paint: { 'fill-color': '#dc2626', 'fill-opacity': 0.2 },
+        });
+
+        this.map.addLayer({
+            id: 'event-frames-polygons-line',
+            type: 'line',
+            source: 'event-frames-polygons',
+            paint: { 'line-color': '#dc2626', 'line-width': 1.5 },
+        });
+
+        this.map.on('click', 'event-frames-polygons-fill', (e) => {
+            const eventId = e.features?.[0]?.properties?.eventId;
+            const event = this.events.find((ev) => ev.id === eventId);
+
+            if (event) this.selectEvent(event);
+        });
+    },
+
+    /**
+     * The frame of an event that's current as of `this.moment` — the
+     * latest one whose own moment has already arrived. Events without
+     * frames (the common case) have nothing here and just use their own
+     * fixed lat/lng.
+     */
+    currentFrame(event) {
+        if (!event.frames || event.frames.length === 0) return null;
+
+        const eligible = event.frames.filter((frame) => frame.moment <= this.moment);
+        if (eligible.length === 0) return null;
+
+        return eligible.reduce((latest, frame) => (frame.moment > latest.moment ? frame : latest));
+    },
+
+    get visibleEvents() {
+        if (this.moment === null) return [];
+
+        return this.events.filter((event) => event.start_moment <= this.moment && this.moment < event.end_moment);
     },
 
     renderMarkers() {
         this.markers.forEach((marker) => marker.remove());
-        this.markers = this.visibleEvents.map((event) => {
-            const el = document.createElement('button');
-            el.type = 'button';
-            el.className = 'atlas-marker';
-            el.setAttribute('aria-label', event.title_ar);
-            el.addEventListener('click', () => this.selectEvent(event));
+        this.markers = [];
 
-            return new Marker({ element: el })
-                .setLngLat([event.longitude, event.latitude])
-                .addTo(this.map);
+        const polygonFeatures = [];
+
+        this.visibleEvents.forEach((event) => {
+            const frame = this.currentFrame(event);
+
+            if (frame?.geometry_type === 'polygon') {
+                polygonFeatures.push({
+                    type: 'Feature',
+                    geometry: frame.geometry,
+                    properties: { eventId: event.id },
+                });
+                this.markers.push(this.createMarker(event, this.polygonCentroid(frame.geometry), frame.icon));
+
+                return;
+            }
+
+            if (frame?.geometry_type === 'point') {
+                this.markers.push(this.createMarker(event, frame.geometry.coordinates, frame.icon));
+
+                return;
+            }
+
+            this.markers.push(this.createMarker(event, [event.longitude, event.latitude], null));
         });
+
+        if (this.map.getSource('event-frames-polygons')) {
+            this.map.getSource('event-frames-polygons').setData({
+                type: 'FeatureCollection',
+                features: polygonFeatures,
+            });
+        }
     },
 
-    onYearChange() {
+    createMarker(event, lngLat, icon) {
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = icon ? 'atlas-marker atlas-marker-icon' : 'atlas-marker';
+        el.textContent = icon ? (ICONS[icon] ?? '') : '';
+        el.setAttribute('aria-label', event.title_ar);
+        el.addEventListener('click', () => this.selectEvent(event));
+
+        return new Marker({ element: el }).setLngLat(lngLat).addTo(this.map);
+    },
+
+    polygonCentroid(geometry) {
+        const ring = geometry.coordinates[0];
+        const [sumLng, sumLat] = ring.reduce(([lng, lat], [pointLng, pointLat]) => [lng + pointLng, lat + pointLat], [0, 0]);
+
+        return [sumLng / ring.length, sumLat / ring.length];
+    },
+
+    onTimeChange() {
         this.renderMarkers();
     },
 
     selectEvent(event) {
         this.selectedEvent = event;
-        this.map.flyTo({ center: [event.longitude, event.latitude], zoom: 8, duration: 800 });
+        const frame = this.currentFrame(event);
+        const center = frame?.geometry_type === 'polygon'
+            ? this.polygonCentroid(frame.geometry)
+            : (frame?.geometry.coordinates ?? [event.longitude, event.latitude]);
+
+        this.map.flyTo({ center, zoom: 8, duration: 800 });
     },
 
     closePanel() {
@@ -174,14 +306,24 @@ Alpine.data('atlas', () => ({
         return year < 0 ? `${Math.abs(year)} ق.م` : `${year} م`;
     },
 
-    formatEventDate(event) {
-        const year = this.formatYear(event.event_year);
+    formatMoment(moment) {
+        if (moment === null || moment === undefined) return '';
 
-        if (event.date_precision === 'exact' && event.event_month && event.event_day) {
-            return `${event.event_day}/${event.event_month}/${Math.abs(event.event_year)}`;
+        const { year, month, day, hour, minute } = unpackMoment(moment);
+
+        if (month === 1 && day === 1 && hour === 0 && minute === 0) {
+            return this.formatYear(year);
         }
 
-        return year;
+        const datePart = `${day}/${month}/${Math.abs(year)}${year < 0 ? ' ق.م' : ''}`;
+
+        if (hour === 0 && minute === 0) return datePart;
+
+        return `${datePart} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    },
+
+    formatEventDate(event) {
+        return this.formatMoment(event.start_moment);
     },
 }));
 
