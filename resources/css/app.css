@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+html,
+body,
+#app {
+    margin: 0;
+    height: 100%;
+}
+
+.atlas-marker {
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #f59e0b;
+    border: 2px solid #78350f;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
+}
+
+.atlas-marker:hover {
+    background: #fbbf24;
+}
