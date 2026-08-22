@@ -68,7 +68,7 @@ const ICONS = {
 Alpine.data('atlas', () => ({
     loading: true,
     error: null,
-    era: null,
+    eras: [],
     events: [],
     // The timeline only ever stops at real, already-computed moments
     // (era bounds, event starts/ends, frame times) instead of scrubbing
@@ -89,7 +89,7 @@ Alpine.data('atlas', () => ({
                 fetch('/api/events').then((r) => r.json()),
             ]);
 
-            this.era = erasRes.data[0] ?? null;
+            this.eras = erasRes.data;
             this.events = eventsRes.data;
             this.timelineMoments = this.buildTimelineMoments();
             this.momentIndex = 0;
@@ -104,10 +104,10 @@ Alpine.data('atlas', () => ({
     buildTimelineMoments() {
         const moments = new Set();
 
-        if (this.era) {
-            moments.add(packMoment(this.era.start_year, 1, 1, 0, 0));
-            moments.add(packMoment(this.era.end_year, 12, 31, 23, 59));
-        }
+        this.eras.forEach((era) => {
+            moments.add(packMoment(era.start_year, 1, 1, 0, 0));
+            moments.add(packMoment(era.end_year, 12, 31, 23, 59));
+        });
 
         this.events.forEach((event) => {
             moments.add(event.start_moment);
@@ -120,6 +120,17 @@ Alpine.data('atlas', () => ({
 
     get moment() {
         return this.timelineMoments[this.momentIndex] ?? null;
+    },
+
+    // Eras can be centuries or millennia apart (the timeline only stops at
+    // real moments, so it just jumps the gap), so "the current era" has to
+    // be computed per moment rather than assumed to be a single fixed era.
+    get currentEra() {
+        if (this.moment === null) return null;
+
+        const { year } = unpackMoment(this.moment);
+
+        return this.eras.find((era) => era.start_year <= year && year <= era.end_year) ?? null;
     },
 
     stepTime(delta) {
@@ -151,7 +162,7 @@ Alpine.data('atlas', () => ({
         const addContentWhenReady = () => {
             if (this.mapReady || !this.map.isStyleLoaded()) return;
             this.mapReady = true;
-            this.renderBoundary();
+            this.initBoundaryLayer();
             this.arabizeCountryLabels();
             this.initPolygonLayer();
             this.renderMarkers();
@@ -176,12 +187,10 @@ Alpine.data('atlas', () => ({
         });
     },
 
-    renderBoundary() {
-        if (!this.era?.boundary_geojson) return;
-
+    initBoundaryLayer() {
         this.map.addSource('era-boundary', {
             type: 'geojson',
-            data: this.era.boundary_geojson,
+            data: { type: 'FeatureCollection', features: [] },
         });
 
         this.map.addLayer({
@@ -197,6 +206,18 @@ Alpine.data('atlas', () => ({
             source: 'era-boundary',
             paint: { 'line-color': '#b45309', 'line-width': 1.5 },
         });
+
+        this.renderBoundary();
+    },
+
+    // Which era is "current" changes as the timeline moves, so the
+    // boundary shown has to be re-synced on every time change, not drawn
+    // once at map load.
+    renderBoundary() {
+        const source = this.map.getSource('era-boundary');
+        if (!source) return;
+
+        source.setData(this.currentEra?.boundary_geojson ?? { type: 'FeatureCollection', features: [] });
     },
 
     arabizeCountryLabels() {
@@ -313,6 +334,7 @@ Alpine.data('atlas', () => ({
 
     onTimeChange() {
         this.renderMarkers();
+        this.renderBoundary();
     },
 
     selectEvent(event) {

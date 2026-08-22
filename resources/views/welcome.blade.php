@@ -86,11 +86,11 @@
             </aside>
 
             <!-- Timeline -->
-            <template x-if="era">
+            <template x-if="timelineMoments.length > 0">
                 <footer class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center p-4">
                     <div class="pointer-events-auto w-full max-w-xl rounded-2xl bg-stone-900/85 p-4 shadow-lg backdrop-blur">
                         <div class="mb-2 flex items-center justify-between text-xs text-stone-300">
-                            <span x-text="era.name_ar"></span>
+                            <span x-text="currentEra ? currentEra.name_ar : 'بين العصور'"></span>
                             <span class="font-mono text-amber-300" x-text="formatMoment(moment)"></span>
                         </div>
                         <div class="flex items-center gap-2">
@@ -119,8 +119,8 @@
                             >◀</button>
                         </div>
                         <div class="mt-1 flex justify-between text-[11px] text-stone-500">
-                            <span x-text="formatYear(era.start_year)"></span>
-                            <span x-text="formatYear(era.end_year)"></span>
+                            <span x-text="formatMoment(timelineMoments[0])"></span>
+                            <span x-text="formatMoment(timelineMoments[timelineMoments.length - 1])"></span>
                         </div>
                     </div>
                 </footer>
