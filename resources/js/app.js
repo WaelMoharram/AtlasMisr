@@ -167,6 +167,7 @@ Alpine.data('atlas', () => ({
             this.initBoundaryLayer();
             this.arabizeCountryLabels();
             this.initPolygonLayer();
+            this.initSideZoneLayer();
             this.renderMarkers();
         };
 
@@ -258,6 +259,36 @@ Alpine.data('atlas', () => ({
         });
     },
 
+    // Control-zone polygons (side-tagged 'polygon' frames) rendered as a
+    // colored area per side during playback — separate from the era
+    // boundary / static event-polygon layers above.
+    initSideZoneLayer() {
+        this.map.addSource('atlas-side-zones', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+        });
+
+        this.map.addLayer({
+            id: 'atlas-side-zones-fill',
+            type: 'fill',
+            source: 'atlas-side-zones',
+            paint: {
+                'fill-color': ['match', ['get', 'side'], 'a', '#dc2626', 'b', '#2563eb', '#999999'],
+                'fill-opacity': 0.22,
+            },
+        });
+
+        this.map.addLayer({
+            id: 'atlas-side-zones-line',
+            type: 'line',
+            source: 'atlas-side-zones',
+            paint: {
+                'line-color': ['match', ['get', 'side'], 'a', '#dc2626', 'b', '#2563eb', '#999999'],
+                'line-width': 2,
+            },
+        });
+    },
+
     // --- Two-sided animated troop-movement playback ---
     // Distinct from the discrete timeline: this animates smoothly (via
     // requestAnimationFrame) through an event's own side-tagged frames,
@@ -270,10 +301,24 @@ Alpine.data('atlas', () => ({
     playbackDisplay: { a: null, b: null, momentLabel: '' },
     sideMarkers: { a: null, b: null },
 
-    framesForSide(event, side) {
+    framesForSide(event, side, geometryType = null) {
         return (event.frames ?? [])
-            .filter((frame) => frame.side === side)
+            .filter((frame) => frame.side === side && (!geometryType || frame.geometry_type === geometryType))
             .sort((a, b) => a.moment - b.moment);
+    },
+
+    // The latest control-zone polygon whose moment has already arrived —
+    // zones snap rather than morph, same reasoning as polygon frames
+    // elsewhere (interpolating arbitrary polygon shapes isn't meaningful).
+    currentZoneForSide(zoneFrames, moment) {
+        if (zoneFrames.length === 0) return null;
+
+        let current = zoneFrames[0];
+        zoneFrames.forEach((frame) => {
+            if (frame.moment <= moment) current = frame;
+        });
+
+        return current;
     },
 
     hasSideAnimation(event) {
@@ -326,9 +371,11 @@ Alpine.data('atlas', () => ({
     },
 
     startPlayback(event) {
-        const framesA = this.framesForSide(event, 'a');
-        const framesB = this.framesForSide(event, 'b');
-        const all = [...framesA, ...framesB];
+        const pointFramesA = this.framesForSide(event, 'a', 'point');
+        const pointFramesB = this.framesForSide(event, 'b', 'point');
+        const zoneFramesA = this.framesForSide(event, 'a', 'polygon');
+        const zoneFramesB = this.framesForSide(event, 'b', 'polygon');
+        const all = [...pointFramesA, ...pointFramesB, ...zoneFramesA, ...zoneFramesB];
         if (all.length === 0) return;
 
         this.stopPlayback();
@@ -344,7 +391,7 @@ Alpine.data('atlas', () => ({
 
             const progress = Math.min(1, (now - startedAt) / this.playbackDurationMs);
             this.playbackVirtualMoment = minMoment + (maxMoment - minMoment) * progress;
-            this.renderPlaybackFrame(framesA, framesB);
+            this.renderPlaybackFrame(pointFramesA, pointFramesB, zoneFramesA, zoneFramesB);
 
             if (progress < 1) {
                 this.playbackRaf = requestAnimationFrame(tick);
@@ -366,14 +413,17 @@ Alpine.data('atlas', () => ({
             this.sideMarkers[side] = null;
         });
         this.playbackDisplay = { a: null, b: null, momentLabel: '' };
+
+        this.map?.getSource('atlas-side-zones')?.setData({ type: 'FeatureCollection', features: [] });
     },
 
-    renderPlaybackFrame(framesA, framesB) {
-        const stateA = this.interpolatedSideState(framesA, this.playbackVirtualMoment);
-        const stateB = this.interpolatedSideState(framesB, this.playbackVirtualMoment);
+    renderPlaybackFrame(pointFramesA, pointFramesB, zoneFramesA, zoneFramesB) {
+        const stateA = this.interpolatedSideState(pointFramesA, this.playbackVirtualMoment);
+        const stateB = this.interpolatedSideState(pointFramesB, this.playbackVirtualMoment);
 
         this.updateSideMarker('a', stateA);
         this.updateSideMarker('b', stateB);
+        this.updateSideZones(zoneFramesA, zoneFramesB, this.playbackVirtualMoment);
 
         const anchorMoment = stateA?.nearestRealMoment ?? stateB?.nearestRealMoment ?? Math.round(this.playbackVirtualMoment);
 
@@ -382,6 +432,20 @@ Alpine.data('atlas', () => ({
             b: stateB ? { troop_count: stateB.troop_count, casualties: stateB.casualties } : null,
             momentLabel: this.formatMoment(anchorMoment),
         };
+    },
+
+    updateSideZones(zoneFramesA, zoneFramesB, moment) {
+        const source = this.map.getSource('atlas-side-zones');
+        if (!source) return;
+
+        const zoneA = this.currentZoneForSide(zoneFramesA, moment);
+        const zoneB = this.currentZoneForSide(zoneFramesB, moment);
+        const features = [];
+
+        if (zoneA) features.push({ type: 'Feature', geometry: zoneA.geometry, properties: { side: 'a' } });
+        if (zoneB) features.push({ type: 'Feature', geometry: zoneB.geometry, properties: { side: 'b' } });
+
+        source.setData({ type: 'FeatureCollection', features });
     },
 
     updateSideMarker(side, state) {

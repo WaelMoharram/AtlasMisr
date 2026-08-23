@@ -49,7 +49,7 @@ class FramesRelationManager extends RelationManager
                     ->native(false),
                 Select::make('side')
                     ->label('الجانب (لخريطة القوات المتحركة)')
-                    ->helperText('اختياري — حدّده بس لو الحدث فيه خريطة قوات متحركة بجانبين.')
+                    ->helperText('اختياري — حدّده بس لو الحدث فيه خريطة قوات متحركة بجانبين. نقطة = ماركر متحرك بيحمل عدد القوات. بوليجون = منطقة سيطرة ملوّنة بتتحدّث مع الوقت أثناء التشغيل.')
                     ->options(['a' => 'جانب أ (أحمر)', 'b' => 'جانب ب (أزرق)'])
                     ->native(false),
                 TextInput::make('troop_count')
