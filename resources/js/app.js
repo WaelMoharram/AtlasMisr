@@ -385,6 +385,7 @@ Alpine.data('atlas', () => ({
         const startedAt = performance.now();
 
         this.playbackActive = true;
+        this.renderMarkers();
 
         const tick = (now) => {
             if (!this.playbackActive) return;
@@ -415,6 +416,7 @@ Alpine.data('atlas', () => ({
         this.playbackDisplay = { a: null, b: null, momentLabel: '' };
 
         this.map?.getSource('atlas-side-zones')?.setData({ type: 'FeatureCollection', features: [] });
+        this.renderMarkers();
     },
 
     renderPlaybackFrame(pointFramesA, pointFramesB, zoneFramesA, zoneFramesB) {
@@ -502,6 +504,11 @@ Alpine.data('atlas', () => ({
         const polygonFeatures = [];
 
         this.visibleEvents.forEach((event) => {
+            // While an event's own two-sided animation is playing, its plain
+            // marker/polygon would just sit on top of the moving side
+            // markers and zones — hide it for the duration of playback.
+            if (this.playbackActive && this.selectedEvent?.id === event.id) return;
+
             const frame = this.currentFrame(event);
 
             if (frame?.geometry_type === 'polygon') {
@@ -552,7 +559,6 @@ Alpine.data('atlas', () => ({
 
     onTimeChange() {
         this.stopPlayback();
-        this.renderMarkers();
         this.renderBoundary();
     },
 
