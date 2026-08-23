@@ -33,6 +33,8 @@ class EventResource extends JsonResource
             'description' => $this->description,
             'media' => collect($this->media)->map(fn (string $path) => Storage::disk('public')->url($path))->all(),
             'video_url' => $this->video_url,
+            'side_a_label' => $this->side_a_label,
+            'side_b_label' => $this->side_b_label,
             'source' => new SourceResource($this->whenLoaded('source')),
             'frames' => EventFrameResource::collection($this->whenLoaded('frames')),
         ];

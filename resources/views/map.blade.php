@@ -115,6 +115,63 @@
                             </div>
                         </template>
 
+                        <template x-if="hasSideAnimation(selectedEvent)">
+                            <div class="mt-4 rounded-xl border border-stone-700 bg-stone-800/60 p-3">
+                                <div class="mb-2 flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-stone-300">خريطة القوات المتحركة</span>
+                                    <button
+                                        type="button"
+                                        @click="playbackActive ? stopPlayback() : startPlayback(selectedEvent)"
+                                        class="rounded-full bg-amber-600 px-3 py-1 text-xs font-bold text-stone-950 hover:bg-amber-500"
+                                        x-text="playbackActive ? 'إيقاف ⏸' : 'تشغيل ▶'"
+                                    ></button>
+                                </div>
+
+                                <p
+                                    class="mb-2 text-center font-mono text-xs text-amber-300"
+                                    x-show="playbackDisplay.momentLabel"
+                                    x-text="playbackDisplay.momentLabel"
+                                ></p>
+
+                                <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                                    <div class="rounded-lg bg-red-950/50 p-2">
+                                        <p class="font-semibold text-red-300" x-text="selectedEvent.side_a_label || 'جانب أ'"></p>
+                                        <p class="mt-1 text-stone-400">
+                                            قوات:
+                                            <span
+                                                class="font-mono font-bold text-red-200"
+                                                x-text="playbackDisplay.a?.troop_count != null ? playbackDisplay.a.troop_count.toLocaleString('ar-EG') : '—'"
+                                            ></span>
+                                        </p>
+                                        <p class="text-stone-400">
+                                            خسائر:
+                                            <span
+                                                class="font-mono font-bold text-red-200"
+                                                x-text="playbackDisplay.a?.casualties != null ? playbackDisplay.a.casualties.toLocaleString('ar-EG') : '—'"
+                                            ></span>
+                                        </p>
+                                    </div>
+                                    <div class="rounded-lg bg-blue-950/50 p-2">
+                                        <p class="font-semibold text-blue-300" x-text="selectedEvent.side_b_label || 'جانب ب'"></p>
+                                        <p class="mt-1 text-stone-400">
+                                            قوات:
+                                            <span
+                                                class="font-mono font-bold text-blue-200"
+                                                x-text="playbackDisplay.b?.troop_count != null ? playbackDisplay.b.troop_count.toLocaleString('ar-EG') : '—'"
+                                            ></span>
+                                        </p>
+                                        <p class="text-stone-400">
+                                            خسائر:
+                                            <span
+                                                class="font-mono font-bold text-blue-200"
+                                                x-text="playbackDisplay.b?.casualties != null ? playbackDisplay.b.casualties.toLocaleString('ar-EG') : '—'"
+                                            ></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
                         <template x-if="selectedEvent.source">
                             <div class="mt-6 border-t border-stone-700 pt-4 text-xs text-stone-400">
                                 <p class="mb-1 font-semibold text-stone-300">المصدر</p>

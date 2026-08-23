@@ -49,3 +49,36 @@ body,
 .atlas-marker-icon:hover {
     background: rgba(41, 37, 36, 0.95);
 }
+
+.atlas-side-marker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: transform 80ms linear;
+}
+
+.atlas-side-marker-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
+}
+
+.atlas-side-marker-a .atlas-side-marker-dot {
+    background: #dc2626;
+}
+
+.atlas-side-marker-b .atlas-side-marker-dot {
+    background: #2563eb;
+}
+
+.atlas-side-marker-label {
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(12, 10, 9, 0.75);
+}

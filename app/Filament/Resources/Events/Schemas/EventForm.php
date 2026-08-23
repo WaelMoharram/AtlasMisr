@@ -117,6 +117,19 @@ class EventForm
                     ->label('رابط فيديو (يوتيوب)')
                     ->url()
                     ->columnSpanFull(),
+                Section::make('الأطراف المتحاربة')
+                    ->description('اختياري — املأها بس لو الحدث ده هيتعرض كخريطة قوات متحركة (جانب أ = أحمر، جانب ب = أزرق)، وحدّد الجوانب في الـ Frames تحت.')
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('side_a_label')
+                            ->label('جانب أ (أحمر)')
+                            ->placeholder('مثال: مصر'),
+                        TextInput::make('side_b_label')
+                            ->label('جانب ب (أزرق)')
+                            ->placeholder('مثال: إسرائيل'),
+                    ]),
                 Select::make('source_id')
                     ->relationship('source', 'title')
                     ->searchable()

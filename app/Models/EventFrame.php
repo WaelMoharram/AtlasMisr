@@ -19,6 +19,9 @@ class EventFrame extends Model
         'geometry',
         'icon',
         'label',
+        'side',
+        'troop_count',
+        'casualties',
         'sort_order',
     ];
 
@@ -29,6 +32,8 @@ class EventFrame extends Model
         'occurs_hour' => 'integer',
         'occurs_minute' => 'integer',
         'geometry' => 'array',
+        'troop_count' => 'integer',
+        'casualties' => 'integer',
         'sort_order' => 'integer',
     ];
 

@@ -258,16 +258,168 @@ Alpine.data('atlas', () => ({
         });
     },
 
+    // --- Two-sided animated troop-movement playback ---
+    // Distinct from the discrete timeline: this animates smoothly (via
+    // requestAnimationFrame) through an event's own side-tagged frames,
+    // independent of the era/event timeline's step-by-step navigation.
+
+    playbackActive: false,
+    playbackRaf: null,
+    playbackVirtualMoment: null,
+    playbackDurationMs: 9000,
+    playbackDisplay: { a: null, b: null, momentLabel: '' },
+    sideMarkers: { a: null, b: null },
+
+    framesForSide(event, side) {
+        return (event.frames ?? [])
+            .filter((frame) => frame.side === side)
+            .sort((a, b) => a.moment - b.moment);
+    },
+
+    hasSideAnimation(event) {
+        if (!event) return false;
+
+        return this.framesForSide(event, 'a').length > 0 || this.framesForSide(event, 'b').length > 0;
+    },
+
+    frameCenter(frame) {
+        return frame.geometry_type === 'point' ? frame.geometry.coordinates : this.polygonCentroid(frame.geometry);
+    },
+
+    /**
+     * The state of one side at an arbitrary (possibly fractional) point in
+     * time, linearly interpolated between the two frames it falls between.
+     * Position only interpolates smoothly when both bracketing frames are
+     * points — polygon shapes just snap, since morphing between arbitrary
+     * polygons isn't meaningful.
+     */
+    interpolatedSideState(frames, moment) {
+        if (frames.length === 0) return null;
+        if (moment <= frames[0].moment) return { ...frames[0], coords: this.frameCenter(frames[0]) };
+
+        const last = frames[frames.length - 1];
+        if (moment >= last.moment) return { ...last, coords: this.frameCenter(last) };
+
+        for (let i = 0; i < frames.length - 1; i++) {
+            const prev = frames[i];
+            const next = frames[i + 1];
+            if (moment < prev.moment || moment > next.moment) continue;
+
+            const t = next.moment === prev.moment ? 1 : (moment - prev.moment) / (next.moment - prev.moment);
+            const lerp = (a, b) => a + (b - a) * t;
+            const lerpMaybe = (a, b) => (a != null && b != null ? Math.round(lerp(a, b)) : a ?? b);
+
+            const coords = prev.geometry_type === 'point' && next.geometry_type === 'point'
+                ? [lerp(prev.geometry.coordinates[0], next.geometry.coordinates[0]), lerp(prev.geometry.coordinates[1], next.geometry.coordinates[1])]
+                : this.frameCenter(t < 0.5 ? prev : next);
+
+            return {
+                coords,
+                icon: prev.icon,
+                troop_count: lerpMaybe(prev.troop_count, next.troop_count),
+                casualties: lerpMaybe(prev.casualties, next.casualties),
+                nearestRealMoment: t < 0.5 ? prev.moment : next.moment,
+            };
+        }
+
+        return { ...last, coords: this.frameCenter(last) };
+    },
+
+    startPlayback(event) {
+        const framesA = this.framesForSide(event, 'a');
+        const framesB = this.framesForSide(event, 'b');
+        const all = [...framesA, ...framesB];
+        if (all.length === 0) return;
+
+        this.stopPlayback();
+
+        const minMoment = Math.min(...all.map((f) => f.moment));
+        const maxMoment = Math.max(...all.map((f) => f.moment));
+        const startedAt = performance.now();
+
+        this.playbackActive = true;
+
+        const tick = (now) => {
+            if (!this.playbackActive) return;
+
+            const progress = Math.min(1, (now - startedAt) / this.playbackDurationMs);
+            this.playbackVirtualMoment = minMoment + (maxMoment - minMoment) * progress;
+            this.renderPlaybackFrame(framesA, framesB);
+
+            if (progress < 1) {
+                this.playbackRaf = requestAnimationFrame(tick);
+            } else {
+                this.playbackActive = false;
+            }
+        };
+
+        this.playbackRaf = requestAnimationFrame(tick);
+    },
+
+    stopPlayback() {
+        this.playbackActive = false;
+        if (this.playbackRaf) cancelAnimationFrame(this.playbackRaf);
+        this.playbackRaf = null;
+
+        ['a', 'b'].forEach((side) => {
+            this.sideMarkers[side]?.remove();
+            this.sideMarkers[side] = null;
+        });
+        this.playbackDisplay = { a: null, b: null, momentLabel: '' };
+    },
+
+    renderPlaybackFrame(framesA, framesB) {
+        const stateA = this.interpolatedSideState(framesA, this.playbackVirtualMoment);
+        const stateB = this.interpolatedSideState(framesB, this.playbackVirtualMoment);
+
+        this.updateSideMarker('a', stateA);
+        this.updateSideMarker('b', stateB);
+
+        const anchorMoment = stateA?.nearestRealMoment ?? stateB?.nearestRealMoment ?? Math.round(this.playbackVirtualMoment);
+
+        this.playbackDisplay = {
+            a: stateA ? { troop_count: stateA.troop_count, casualties: stateA.casualties } : null,
+            b: stateB ? { troop_count: stateB.troop_count, casualties: stateB.casualties } : null,
+            momentLabel: this.formatMoment(anchorMoment),
+        };
+    },
+
+    updateSideMarker(side, state) {
+        if (!state) {
+            this.sideMarkers[side]?.remove();
+            this.sideMarkers[side] = null;
+
+            return;
+        }
+
+        if (!this.sideMarkers[side]) {
+            const el = document.createElement('div');
+            el.className = `atlas-side-marker atlas-side-marker-${side}`;
+            this.sideMarkers[side] = new Marker({ element: el }).setLngLat(state.coords).addTo(this.map);
+        } else {
+            this.sideMarkers[side].setLngLat(state.coords);
+        }
+
+        const icon = state.icon ? (ICONS[state.icon] ?? '') : '';
+        const count = state.troop_count != null ? state.troop_count.toLocaleString('ar-EG') : '';
+        this.sideMarkers[side].getElement().innerHTML = `
+            <span class="atlas-side-marker-dot"></span>
+            <span class="atlas-side-marker-label">${icon} ${count}</span>
+        `;
+    },
+
     /**
      * The frame of an event that's current as of `this.moment` — the
      * latest one whose own moment has already arrived. Events without
      * frames (the common case) have nothing here and just use their own
-     * fixed lat/lng.
+     * fixed lat/lng. Side-tagged frames (the two-army animated mode) are
+     * excluded — those only render during playback, not as a static pin.
      */
     currentFrame(event) {
-        if (!event.frames || event.frames.length === 0) return null;
+        const plain = (event.frames ?? []).filter((frame) => !frame.side);
+        if (plain.length === 0) return null;
 
-        const eligible = event.frames.filter((frame) => frame.moment <= this.moment);
+        const eligible = plain.filter((frame) => frame.moment <= this.moment);
         if (eligible.length === 0) return null;
 
         return eligible.reduce((latest, frame) => (frame.moment > latest.moment ? frame : latest));
@@ -335,11 +487,13 @@ Alpine.data('atlas', () => ({
     },
 
     onTimeChange() {
+        this.stopPlayback();
         this.renderMarkers();
         this.renderBoundary();
     },
 
     selectEvent(event) {
+        this.stopPlayback();
         this.selectedEvent = event;
         const frame = this.currentFrame(event);
         const center = frame?.geometry_type === 'polygon'
@@ -380,6 +534,7 @@ Alpine.data('atlas', () => ({
     },
 
     closePanel() {
+        this.stopPlayback();
         this.selectedEvent = null;
     },
 

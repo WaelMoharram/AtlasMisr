@@ -47,6 +47,19 @@ class FramesRelationManager extends RelationManager
                     ->label('الأيقونة')
                     ->options(self::ICONS)
                     ->native(false),
+                Select::make('side')
+                    ->label('الجانب (لخريطة القوات المتحركة)')
+                    ->helperText('اختياري — حدّده بس لو الحدث فيه خريطة قوات متحركة بجانبين.')
+                    ->options(['a' => 'جانب أ (أحمر)', 'b' => 'جانب ب (أزرق)'])
+                    ->native(false),
+                TextInput::make('troop_count')
+                    ->label('عدد القوات')
+                    ->numeric()
+                    ->minValue(0),
+                TextInput::make('casualties')
+                    ->label('الخسائر التراكمية حتى هذه اللحظة')
+                    ->numeric()
+                    ->minValue(0),
                 Section::make('التوقيت')
                     ->columns(5)
                     ->schema([
@@ -111,6 +124,25 @@ class FramesRelationManager extends RelationManager
                 TextColumn::make('icon')
                     ->label('الأيقونة')
                     ->formatStateUsing(fn (?string $state) => $state ? (self::ICONS[$state] ?? $state) : '—'),
+                TextColumn::make('side')
+                    ->label('الجانب')
+                    ->badge()
+                    ->color(fn (?string $state) => match ($state) {
+                        'a' => 'danger',
+                        'b' => 'info',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state) => match ($state) {
+                        'a' => 'أ (أحمر)',
+                        'b' => 'ب (أزرق)',
+                        default => '—',
+                    }),
+                TextColumn::make('troop_count')
+                    ->label('القوات')
+                    ->placeholder('—'),
+                TextColumn::make('casualties')
+                    ->label('الخسائر')
+                    ->placeholder('—'),
                 TextColumn::make('occurs_year')
                     ->label('التوقيت')
                     ->formatStateUsing(function ($record) {

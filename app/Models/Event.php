@@ -32,6 +32,8 @@ class Event extends Model
         'description',
         'media',
         'video_url',
+        'side_a_label',
+        'side_b_label',
         'source_id',
         'status',
     ];
