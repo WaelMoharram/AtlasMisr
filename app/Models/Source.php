@@ -9,9 +9,11 @@ class Source extends Model
 {
     protected $fillable = [
         'title',
+        'title_en',
         'author',
         'reference',
         'reliability_note',
+        'reliability_note_en',
     ];
 
     public function eras(): HasMany

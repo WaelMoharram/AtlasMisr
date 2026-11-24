@@ -15,6 +15,7 @@ class Era extends Model
         'start_year',
         'end_year',
         'description',
+        'description_en',
         'boundary_geojson',
         'source_id',
         'status',

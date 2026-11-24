@@ -19,6 +19,7 @@ class EraResource extends JsonResource
             'start_year' => $this->start_year,
             'end_year' => $this->end_year,
             'description' => $this->description,
+            'description_en' => $this->description_en,
             'boundary_geojson' => $this->boundary_geojson,
             'source' => new SourceResource($this->whenLoaded('source')),
         ];

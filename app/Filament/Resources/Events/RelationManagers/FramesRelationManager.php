@@ -37,6 +37,9 @@ class FramesRelationManager extends RelationManager
                 TextInput::make('label')
                     ->label('التسمية')
                     ->maxLength(255),
+                TextInput::make('label_en')
+                    ->label('Label (English)')
+                    ->maxLength(255),
                 Select::make('geometry_type')
                     ->label('الشكل')
                     ->options(['point' => 'نقطة', 'polygon' => 'بوليجون'])

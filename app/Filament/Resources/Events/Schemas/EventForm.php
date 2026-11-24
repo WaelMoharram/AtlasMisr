@@ -103,9 +103,15 @@ class EventForm
                             ->numeric()
                             ->extraInputAttributes(['data-map-field' => 'longitude']),
                     ]),
-                TextInput::make('location_name'),
-                TextInput::make('category'),
+                TextInput::make('location_name')->label('Location (Arabic)'),
+                TextInput::make('location_name_en')->label('Location (English)'),
+                TextInput::make('category')->label('Category (Arabic)'),
+                TextInput::make('category_en')->label('Category (English)'),
                 Textarea::make('description')
+                    ->label('Description (Arabic)')
+                    ->columnSpanFull(),
+                Textarea::make('description_en')
+                    ->label('Description (English)')
                     ->columnSpanFull(),
                 FileUpload::make('media')
                     ->image()
@@ -129,6 +135,12 @@ class EventForm
                         TextInput::make('side_b_label')
                             ->label('جانب ب (أزرق)')
                             ->placeholder('مثال: إسرائيل'),
+                        TextInput::make('side_a_label_en')
+                            ->label('Side A (English)')
+                            ->placeholder('e.g. Egypt'),
+                        TextInput::make('side_b_label_en')
+                            ->label('Side B (English)')
+                            ->placeholder('e.g. Israel'),
                     ]),
                 Select::make('source_id')
                     ->relationship('source', 'title')

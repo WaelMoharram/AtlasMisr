@@ -19,6 +19,7 @@ class EventFrame extends Model
         'geometry',
         'icon',
         'label',
+        'label_en',
         'side',
         'troop_count',
         'casualties',

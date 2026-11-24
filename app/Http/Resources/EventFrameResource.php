@@ -24,6 +24,7 @@ class EventFrameResource extends JsonResource
             'geometry' => $this->geometry,
             'icon' => $this->icon,
             'label' => $this->label,
+            'label_en' => $this->label_en,
             'side' => $this->side,
             'troop_count' => $this->troop_count,
             'casualties' => $this->casualties,

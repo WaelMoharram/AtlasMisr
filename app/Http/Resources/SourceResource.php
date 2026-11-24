@@ -15,6 +15,7 @@ class SourceResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'title_en' => $this->title_en,
             'author' => $this->author,
             'reference' => $this->reference,
         ];

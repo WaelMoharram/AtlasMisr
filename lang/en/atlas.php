@@ -1,0 +1,82 @@
+<?php
+
+return [
+    'name' => 'AtlasMisr',
+    'lang_name' => 'English',
+    'other_lang_name' => 'العربية',
+    'title' => 'AtlasMisr: the history of Egypt on a living map',
+    'description' => 'A free, open-source interactive map and timeline of Egyptian history, from the pyramids to the recovery of Sinai. Every event is sourced. In Arabic and English.',
+    'nav_home' => 'Home',
+    'nav_map' => 'Open the map',
+    'footer_line' => 'AtlasMisr is a free, non-profit, open-source project.',
+    'built_by' => 'Built by',
+    'source_code' => 'Source code',
+
+    'hero_eyebrow' => 'Free · Open source · Arabic & English',
+    'hero_title_a' => 'The history of Egypt,',
+    'hero_title_b' => 'on a living map.',
+    'hero_text' => 'Travel from the building of the pyramids to the recovery of Sinai. See where each event happened, when it happened, and who recorded it.',
+    'hero_cta' => 'Explore the map',
+    'hero_cta_2' => 'How it works',
+    'stat_eras' => 'eras',
+    'stat_events' => 'events',
+    'stat_sources' => 'sources',
+
+    'eras_kicker' => 'Across the ages',
+    'eras_title' => 'Five ages, one map',
+    'eras_text' => 'Each era brings its own events, places and sources. Pick one and the timeline takes you there.',
+    'era_events' => ':n events',
+    'era_open' => 'Open on the map',
+
+    'events_kicker' => 'Moments that shaped Egypt',
+    'events_title' => 'Start with a story',
+    'events_text' => 'A few of the events already on the map. Open any one to see it where it happened.',
+    'event_open' => 'See it on the map',
+    'event_playback' => 'Animated',
+
+    'how_kicker' => 'How it works',
+    'how_title' => 'Built to be explored, not just read',
+    'how_items' => [
+        ['icon' => 'map', 'title' => 'A real map', 'text' => 'Every event sits at its true place on an open map. Zoom, pan and follow the story across the land.'],
+        ['icon' => 'time', 'title' => 'A timeline you can travel', 'text' => 'Slide through time from the Old Kingdom to 1989. The map shows what was happening at that moment.'],
+        ['icon' => 'play', 'title' => 'Battles you can replay', 'text' => 'Watch troop movements and zones of control change hour by hour, with numbers for both sides.'],
+        ['icon' => 'book', 'title' => 'Every event has a source', 'text' => 'Each entry names where the information comes from, so you can check it yourself.'],
+    ],
+
+    'principles_title' => 'Principles we do not bend',
+    'principles' => [
+        ['title' => 'Open source', 'text' => 'The code is public. Anyone can run it, study it or build on it.'],
+        ['title' => 'No Google Maps', 'text' => 'Built on free and open map tools, with no API keys and no lock-in.'],
+        ['title' => 'Accuracy first', 'text' => 'Every event cites a source, and academic review is the next step on the road.'],
+        ['title' => 'Free for good', 'text' => 'No subscriptions, no ads, no hidden fees.'],
+    ],
+
+    'cta_title' => 'Pick a year and go there.',
+    'cta_text' => 'The map is open. No sign-up, no cost.',
+
+    // Used by the map page and its script
+    'map_title' => 'AtlasMisr: map of Egypt across the ages',
+    'js' => [
+        'loading' => 'Loading the map...',
+        'load_error' => 'Could not load the map data. Please try again.',
+        'search_placeholder' => 'Search for an event...',
+        'no_results' => 'No results',
+        'close' => 'Close',
+        'source' => 'Source',
+        'troops_map' => 'Troop movements',
+        'play' => 'Play',
+        'stop' => 'Stop',
+        'troops' => 'Troops',
+        'casualties' => 'Casualties',
+        'side_a' => 'Side A',
+        'side_b' => 'Side B',
+        'between_eras' => 'Between eras',
+        'previous' => 'Previous',
+        'next' => 'Next',
+        'home' => 'Home',
+        'bce' => 'BCE',
+        'ce' => 'CE',
+        'palestine' => 'Palestine',
+        'months' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    ],
+];

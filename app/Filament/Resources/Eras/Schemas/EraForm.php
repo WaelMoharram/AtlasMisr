@@ -23,6 +23,10 @@ class EraForm
                     ->required()
                     ->numeric(),
                 Textarea::make('description')
+                    ->label('Description (Arabic)')
+                    ->columnSpanFull(),
+                Textarea::make('description_en')
+                    ->label('Description (English)')
                     ->columnSpanFull(),
                 Textarea::make('boundary_geojson')
                     ->label('Boundary (GeoJSON)')

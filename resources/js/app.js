@@ -12,6 +12,12 @@ setWorkerUrl(maplibreWorkerUrl);
 // correctly — without it, labels render as disconnected characters.
 setRTLTextPlugin(rtlTextPluginUrl, false);
 
+// Language comes from the page (see resources/views/map.blade.php).
+const ATLAS = window.ATLAS ?? { locale: 'ar', t: {} };
+const LOCALE = ATLAS.locale === 'en' ? 'en' : 'ar';
+const NUM_LOCALE = LOCALE === 'en' ? 'en-US' : 'ar-EG';
+const t = (key) => ATLAS.t[key] ?? key;
+
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const EGYPT_CENTER = [30.0, 26.8];
 const EGYPT_ZOOM = 5.3;
@@ -25,8 +31,13 @@ const EGYPT_ZOOM = 5.3;
 const COUNTRY_LABEL_LAYERS = ['label_state', 'label_country_1', 'label_country_2', 'label_country_3'];
 const ARABIC_LABEL_TEXT_FIELD = [
     'case',
-    ['==', ['get', 'iso_a2'], 'PS'], 'فلسطين',
+    ['==', ['get', 'iso_a2'], 'PS'], t('palestine'),
     ['has', 'name:ar'], ['get', 'name:ar'],
+    ['coalesce', ['get', 'name_en'], ['get', 'name']],
+];
+const ENGLISH_LABEL_TEXT_FIELD = [
+    'case',
+    ['==', ['get', 'iso_a2'], 'PS'], t('palestine'),
     ['coalesce', ['get', 'name_en'], ['get', 'name']],
 ];
 
@@ -97,9 +108,59 @@ Alpine.data('atlas', () => ({
             this.momentIndex = 0;
 
             this.initMap();
+            this.applyDeepLink();
         } catch (e) {
-            this.error = 'تعذّر تحميل بيانات الخريطة. تأكد إن السيرفر شغال.';
+            this.error = t('load_error');
             this.loading = false;
+        }
+    },
+
+    // Content helpers: pick the Arabic or English text of a record.
+    t,
+    numLocale: NUM_LOCALE,
+    title(event) {
+        return LOCALE === 'en' ? (event.title_en || event.title_ar) : (event.title_ar || event.title_en);
+    },
+    desc(event) {
+        return LOCALE === 'en' ? (event.description_en || event.description) : event.description;
+    },
+    where(event) {
+        return LOCALE === 'en' ? (event.location_name_en || event.location_name) : event.location_name;
+    },
+    cat(event) {
+        return LOCALE === 'en' ? (event.category_en || event.category) : event.category;
+    },
+    eraName(era) {
+        return LOCALE === 'en' ? (era.name_en || era.name_ar) : era.name_ar;
+    },
+    sourceTitle(source) {
+        return LOCALE === 'en' ? (source.title_en || source.title) : source.title;
+    },
+    sideLabel(event, side) {
+        const base = event[`side_${side}_label`];
+        const en = event[`side_${side}_label_en`];
+        return (LOCALE === 'en' ? (en || base) : base) || t(`side_${side}`);
+    },
+    frameLabel(frame) {
+        return LOCALE === 'en' ? (frame.label_en || frame.label) : frame.label;
+    },
+
+    // Opens an event (?event=ID) or jumps to the start of an era (?era=ID) from a link.
+    applyDeepLink() {
+        const params = new URLSearchParams(window.location.search);
+        const eventId = Number(params.get('event'));
+        const eraId = Number(params.get('era'));
+
+        if (eventId) {
+            const event = this.events.find((e) => e.id === eventId);
+            if (event) setTimeout(() => this.goToEvent(event), 600);
+        } else if (eraId) {
+            const era = this.eras.find((e) => e.id === eraId);
+            const index = era ? this.timelineMoments.indexOf(packMoment(era.start_year, 1, 1, 0, 0)) : -1;
+            if (index !== -1) {
+                this.momentIndex = index;
+                this.onTimeChange();
+            }
         }
     },
 
@@ -226,7 +287,17 @@ Alpine.data('atlas', () => ({
     arabizeCountryLabels() {
         COUNTRY_LABEL_LAYERS.forEach((id) => {
             if (this.map.getLayer(id)) {
-                this.map.setLayoutProperty(id, 'text-field', ARABIC_LABEL_TEXT_FIELD);
+                this.map.setLayoutProperty(id, 'text-field', LOCALE === 'en' ? ENGLISH_LABEL_TEXT_FIELD : ARABIC_LABEL_TEXT_FIELD);
+            }
+        });
+
+        // Cities, towns, villages and water names: one language only, instead of both scripts stacked.
+        const placeField = LOCALE === 'en'
+            ? ['coalesce', ['get', 'name_en'], ['get', 'name']]
+            : ['coalesce', ['get', 'name:ar'], ['get', 'name_en'], ['get', 'name']];
+        (this.map.getStyle().layers ?? []).forEach((layer) => {
+            if (layer.type === 'symbol' && /^(label_(city|town|village|other|suburb|hamlet)|water_name|waterway_line_label)/.test(layer.id)) {
+                this.map.setLayoutProperty(layer.id, 'text-field', placeField);
             }
         });
     },
@@ -467,7 +538,7 @@ Alpine.data('atlas', () => ({
         }
 
         const icon = state.icon ? (ICONS[state.icon] ?? '') : '';
-        const count = state.troop_count != null ? state.troop_count.toLocaleString('ar-EG') : '';
+        const count = state.troop_count != null ? state.troop_count.toLocaleString(NUM_LOCALE) : '';
         this.sideMarkers[side].getElement().innerHTML = `
             <span class="atlas-side-marker-dot"></span>
             <span class="atlas-side-marker-label">${icon} ${count}</span>
@@ -544,7 +615,7 @@ Alpine.data('atlas', () => ({
         el.type = 'button';
         el.className = icon ? 'atlas-marker atlas-marker-icon' : 'atlas-marker';
         el.textContent = icon ? (ICONS[icon] ?? '') : '';
-        el.setAttribute('aria-label', event.title_ar);
+        el.setAttribute('aria-label', this.title(event));
         el.addEventListener('click', () => this.selectEvent(event));
 
         return new Marker({ element: el }).setLngLat(lngLat).addTo(this.map);
@@ -581,10 +652,12 @@ Alpine.data('atlas', () => ({
 
         return this.events
             .filter((event) => (
-                event.title_ar.includes(query)
+                event.title_ar?.includes(query)
                 || event.title_en?.toLowerCase().includes(needle)
                 || event.description?.includes(query)
+                || event.description_en?.toLowerCase().includes(needle)
                 || event.location_name?.includes(query)
+                || event.location_name_en?.toLowerCase().includes(needle)
             ))
             .slice(0, 8);
     },
@@ -619,7 +692,7 @@ Alpine.data('atlas', () => ({
     formatYear(year) {
         if (year === null || year === undefined) return '';
 
-        return year < 0 ? `${Math.abs(year)} ق.م` : `${year} م`;
+        return year < 0 ? `${Math.abs(year)} ${t('bce')}` : `${year} ${t('ce')}`;
     },
 
     formatMoment(moment) {
@@ -631,7 +704,9 @@ Alpine.data('atlas', () => ({
             return this.formatYear(year);
         }
 
-        const datePart = `${day}/${month}/${Math.abs(year)}${year < 0 ? ' ق.م' : ''}`;
+        const datePart = LOCALE === 'en'
+            ? `${day} ${t('months')[month - 1]} ${Math.abs(year)}${year < 0 ? ` ${t('bce')}` : ''}`
+            : `${day}/${month}/${Math.abs(year)}${year < 0 ? ` ${t('bce')}` : ''}`;
 
         if (hour === 0 && minute === 0) return datePart;
 

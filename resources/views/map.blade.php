@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ $lang }}" dir="{{ $dir }}">
     <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        @include('partials.head')
 
-        <title>{{ config('app.name', 'AtlasMisr') }} — خريطة مصر عبر العصور</title>
-
+        <script>
+            window.ATLAS = {
+                locale: @json($lang),
+                t: @json(__('atlas.js')),
+            };
+        </script>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="h-screen w-screen overflow-hidden bg-stone-900 text-stone-100 antialiased">
@@ -20,7 +23,7 @@
                         x-model="searchQuery"
                         @focus="searchOpen = true"
                         @input="searchOpen = true"
-                        placeholder="ابحث عن حدث..."
+                        :placeholder="t('search_placeholder')"
                         class="w-full rounded-full border border-stone-700 bg-stone-900/85 px-4 py-2 text-sm text-stone-100 placeholder-stone-500 shadow-lg backdrop-blur focus:border-amber-500 focus:outline-none"
                     >
                     <template x-if="searchOpen && searchQuery.trim() !== ''">
@@ -32,31 +35,39 @@
                                         @click="goToEvent(result)"
                                         class="block w-full px-4 py-2 text-start text-sm text-stone-200 hover:bg-stone-800"
                                     >
-                                        <span class="block" x-text="result.title_ar"></span>
+                                        <span class="block" x-text="title(result)"></span>
                                         <span class="block text-xs text-stone-500" x-text="formatEventDate(result)"></span>
                                     </button>
                                 </li>
                             </template>
                             <template x-if="searchResults.length === 0">
-                                <li class="px-4 py-3 text-sm text-stone-500">مفيش نتائج</li>
+                                <li class="px-4 py-3 text-sm text-stone-500"><span x-text="t('no_results')"></span></li>
                             </template>
                         </ul>
                     </template>
                 </div>
 
-                <div class="pointer-events-auto shrink-0 rounded-full bg-stone-900/80 px-5 py-2 text-center shadow-lg backdrop-blur">
-                    <h1 class="text-sm font-semibold tracking-wide">أطلس مصر</h1>
-                </div>
+                <a href="{{ route($lang.'.landing') }}" class="pointer-events-auto shrink-0 rounded-full bg-stone-900/80 px-5 py-2 text-center shadow-lg backdrop-blur hover:bg-stone-800">
+                    <h1 class="text-sm font-semibold tracking-wide">{{ __('atlas.name') }}</h1>
+                </a>
 
-                <a
-                    href="{{ route('landing') }}"
-                    class="pointer-events-auto hidden shrink-0 self-center rounded-full bg-stone-900/80 px-4 py-2 text-xs text-stone-300 shadow-lg backdrop-blur hover:bg-stone-800 sm:block"
-                >الرئيسية</a>
+                <div class="pointer-events-auto flex shrink-0 items-center gap-2 self-center">
+                    <a
+                        href="{{ route($otherLang.'.map') }}"
+                        hreflang="{{ $otherLang }}"
+                        lang="{{ $otherLang }}"
+                        class="rounded-full bg-stone-900/80 px-4 py-2 text-xs text-stone-300 shadow-lg backdrop-blur hover:bg-stone-800"
+                    >{{ __('atlas.other_lang_name') }}</a>
+                    <a
+                        href="{{ route($lang.'.landing') }}"
+                        class="hidden rounded-full bg-stone-900/80 px-4 py-2 text-xs text-stone-300 shadow-lg backdrop-blur hover:bg-stone-800 sm:block"
+                    >{{ __('atlas.nav_home') }}</a>
+                </div>
             </header>
 
             <template x-if="loading">
                 <div class="absolute inset-0 z-20 flex items-center justify-center bg-stone-900/60">
-                    <p class="text-sm text-stone-300">جاري تحميل الخريطة...</p>
+                    <p class="text-sm text-stone-300"><span x-text="t('loading')"></span></p>
                 </div>
             </template>
 
@@ -82,19 +93,19 @@
                             @click="closePanel()"
                             class="mb-4 rounded-full bg-stone-800 px-3 py-1 text-xs text-stone-300 hover:bg-stone-700"
                         >
-                            إغلاق ✕
+                            <span x-text="t('close')"></span> ✕
                         </button>
 
                         <span
                             class="mb-2 inline-block rounded-full bg-amber-900/60 px-3 py-1 text-xs text-amber-200"
-                            x-text="selectedEvent.category"
+                            x-text="cat(selectedEvent)"
                         ></span>
 
-                        <h2 class="text-xl font-bold text-stone-50" x-text="selectedEvent.title_ar"></h2>
+                        <h2 class="text-xl font-bold text-stone-50" x-text="title(selectedEvent)"></h2>
                         <p class="mt-1 text-sm text-stone-400" x-text="formatEventDate(selectedEvent)"></p>
-                        <p class="mt-1 text-sm text-stone-400" x-text="selectedEvent.location_name"></p>
+                        <p class="mt-1 text-sm text-stone-400" x-text="where(selectedEvent)"></p>
 
-                        <p class="mt-4 leading-7 text-stone-200" x-text="selectedEvent.description"></p>
+                        <p class="mt-4 leading-7 text-stone-200" x-text="desc(selectedEvent)"></p>
 
                         <template x-if="selectedEvent.media && selectedEvent.media.length">
                             <div class="mt-4 grid grid-cols-2 gap-2">
@@ -118,12 +129,12 @@
                         <template x-if="hasSideAnimation(selectedEvent)">
                             <div class="mt-4 rounded-xl border border-stone-700 bg-stone-800/60 p-3">
                                 <div class="mb-2 flex items-center justify-between">
-                                    <span class="text-xs font-semibold text-stone-300">خريطة القوات المتحركة</span>
+                                    <span class="text-xs font-semibold text-stone-300"><span x-text="t('troops_map')"></span></span>
                                     <button
                                         type="button"
                                         @click="playbackActive ? stopPlayback() : startPlayback(selectedEvent)"
                                         class="rounded-full bg-amber-600 px-3 py-1 text-xs font-bold text-stone-950 hover:bg-amber-500"
-                                        x-text="playbackActive ? 'إيقاف ⏸' : 'تشغيل ▶'"
+                                        x-text="playbackActive ? t('stop') + ' ⏸' : t('play') + ' ▶'"
                                     ></button>
                                 </div>
 
@@ -135,36 +146,36 @@
 
                                 <div class="grid grid-cols-2 gap-2 text-center text-xs">
                                     <div class="rounded-lg bg-red-950/50 p-2">
-                                        <p class="font-semibold text-red-300" x-text="selectedEvent.side_a_label || 'جانب أ'"></p>
+                                        <p class="font-semibold text-red-300" x-text="sideLabel(selectedEvent, 'a')"></p>
                                         <p class="mt-1 text-stone-400">
-                                            قوات:
+                                            <span x-text="t('troops') + ':'"></span>
                                             <span
                                                 class="font-mono font-bold text-red-200"
-                                                x-text="playbackDisplay.a?.troop_count != null ? playbackDisplay.a.troop_count.toLocaleString('ar-EG') : '—'"
+                                                x-text="playbackDisplay.a?.troop_count != null ? playbackDisplay.a.troop_count.toLocaleString(numLocale) : '—'"
                                             ></span>
                                         </p>
                                         <p class="text-stone-400">
-                                            خسائر:
+                                            <span x-text="t('casualties') + ':'"></span>
                                             <span
                                                 class="font-mono font-bold text-red-200"
-                                                x-text="playbackDisplay.a?.casualties != null ? playbackDisplay.a.casualties.toLocaleString('ar-EG') : '—'"
+                                                x-text="playbackDisplay.a?.casualties != null ? playbackDisplay.a.casualties.toLocaleString(numLocale) : '—'"
                                             ></span>
                                         </p>
                                     </div>
                                     <div class="rounded-lg bg-blue-950/50 p-2">
-                                        <p class="font-semibold text-blue-300" x-text="selectedEvent.side_b_label || 'جانب ب'"></p>
+                                        <p class="font-semibold text-blue-300" x-text="sideLabel(selectedEvent, 'b')"></p>
                                         <p class="mt-1 text-stone-400">
-                                            قوات:
+                                            <span x-text="t('troops') + ':'"></span>
                                             <span
                                                 class="font-mono font-bold text-blue-200"
-                                                x-text="playbackDisplay.b?.troop_count != null ? playbackDisplay.b.troop_count.toLocaleString('ar-EG') : '—'"
+                                                x-text="playbackDisplay.b?.troop_count != null ? playbackDisplay.b.troop_count.toLocaleString(numLocale) : '—'"
                                             ></span>
                                         </p>
                                         <p class="text-stone-400">
-                                            خسائر:
+                                            <span x-text="t('casualties') + ':'"></span>
                                             <span
                                                 class="font-mono font-bold text-blue-200"
-                                                x-text="playbackDisplay.b?.casualties != null ? playbackDisplay.b.casualties.toLocaleString('ar-EG') : '—'"
+                                                x-text="playbackDisplay.b?.casualties != null ? playbackDisplay.b.casualties.toLocaleString(numLocale) : '—'"
                                             ></span>
                                         </p>
                                     </div>
@@ -174,8 +185,8 @@
 
                         <template x-if="selectedEvent.source">
                             <div class="mt-6 border-t border-stone-700 pt-4 text-xs text-stone-400">
-                                <p class="mb-1 font-semibold text-stone-300">المصدر</p>
-                                <p x-text="selectedEvent.source.title"></p>
+                                <p class="mb-1 font-semibold text-stone-300" x-text="t('source')"></p>
+                                <p x-text="sourceTitle(selectedEvent.source)"></p>
                                 <a
                                     :href="selectedEvent.source.reference"
                                     target="_blank"
@@ -191,10 +202,10 @@
 
             <!-- Timeline -->
             <template x-if="timelineMoments.length > 0">
-                <footer class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center p-4">
+                <footer class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center p-4 transition-[padding] md:data-[panel=open]:pe-[25rem]" :data-panel="selectedEvent ? 'open' : 'closed'">
                     <div class="pointer-events-auto w-full max-w-xl rounded-2xl bg-stone-900/85 p-4 shadow-lg backdrop-blur">
                         <div class="mb-2 flex items-center justify-between text-xs text-stone-300">
-                            <span x-text="currentEra ? currentEra.name_ar : 'بين العصور'"></span>
+                            <span x-text="currentEra ? eraName(currentEra) : t('between_eras')"></span>
                             <span class="font-mono text-amber-300" x-text="formatMoment(moment)"></span>
                         </div>
                         <div class="flex items-center gap-2">
@@ -203,8 +214,8 @@
                                 @click="stepTime(-1)"
                                 :disabled="momentIndex <= 0"
                                 class="shrink-0 rounded-full bg-stone-800 px-2.5 py-1 text-stone-300 hover:bg-stone-700 disabled:opacity-30"
-                                aria-label="السابق"
-                            >▶</button>
+                                x-bind:aria-label="t('previous')"
+                            >{{ $dir === 'rtl' ? '▶' : '◀' }}</button>
                             <input
                                 type="range"
                                 class="w-full accent-amber-500"
@@ -219,8 +230,8 @@
                                 @click="stepTime(1)"
                                 :disabled="momentIndex >= timelineMoments.length - 1"
                                 class="shrink-0 rounded-full bg-stone-800 px-2.5 py-1 text-stone-300 hover:bg-stone-700 disabled:opacity-30"
-                                aria-label="التالي"
-                            >◀</button>
+                                x-bind:aria-label="t('next')"
+                            >{{ $dir === 'rtl' ? '◀' : '▶' }}</button>
                         </div>
                         <div class="mt-1 flex justify-between text-[11px] text-stone-500">
                             <span x-text="formatMoment(timelineMoments[0])"></span>
