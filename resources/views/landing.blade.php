@@ -145,7 +145,7 @@
                     <span class="size-2.5 rounded-full bg-white/20"></span><span class="size-2.5 rounded-full bg-white/20"></span><span class="size-2.5 rounded-full bg-white/20"></span>
                     <span class="mx-auto text-xs text-stone-500" dir="ltr">atlas.waelmoharram.com/map</span>
                 </div>
-                <img src="{{ asset('images/map-preview.webp') }}" alt="" loading="lazy" class="block w-full">
+                <img src="{{ asset('images/map-preview-'.$lang.'.webp') }}" alt="" loading="lazy" class="block w-full">
             </div>
         @endif
 

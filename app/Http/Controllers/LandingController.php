@@ -26,7 +26,7 @@ class LandingController extends Controller
                 'sources' => Source::query()->count(),
             ],
             'hasHero' => file_exists(public_path('images/hero.webp')),
-            'hasMapShot' => file_exists(public_path('images/map-preview.webp')),
+            'hasMapShot' => file_exists(public_path('images/map-preview-'.app()->getLocale().'.webp')),
         ]);
     }
 }
