@@ -58,6 +58,10 @@ php artisan make:filament-user
 - `resources/views/welcome.blade.php` — الصفحة الرئيسية
 - `database/seeders/DemoContentSeeder.php` — بيانات الديمو (حرب أكتوبر وتحرير طابا)
 
+## المساهمة
+
+مرحّب بأي مساهمة: اقتراح حدث أو مصدر، تصحيح، أو كود. التفاصيل في [CONTRIBUTING.md](CONTRIBUTING.md) (عربي وإنجليزي).
+
 ## الترخيص
 
 هيتحدد لاحقًا (MIT أو AGPL مقترحين — راجع خطة المشروع).
